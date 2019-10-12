@@ -1,0 +1,82 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>OCR Data Collecter</title>
+  </head>
+  <body>
+    <div style="text-align: center;">
+      <h1>OCR Data Collecter</h1>
+      <h4>Developed by: Team Warewolves</h4>
+      <button onclick="window.open('table.html')">View Data</button>
+      <button onclick="capture()">Get Screen</button>
+      <button onclick="takeASnap()">Capture and Export CSV</button>
+      <br />
+      <video
+        style="margin: 10px; border: 1px solid black;"
+        id="video"
+        poster="https://upload.wikimedia.org/wikipedia/commons/6/64/Poster_not_available.jpg"
+        autoplay
+      >
+        Not Available
+      </video>
+    </div>
+
+    <script>
+      const video = document.getElementById("video");
+
+      async function capture() {
+        navigator.mediaDevices
+          .getDisplayMedia({
+            video: { mediaSource: "screen" }
+          })
+          .then(stream => {
+            video.srcObject = stream;
+          })
+          .catch(console.error);
+      }
+
+      function takeASnap() {
+        const canvas = document.createElement("canvas"); // create a canvas
+        const ctx = canvas.getContext("2d"); // get its context
+        canvas.width = video.videoWidth; // set its size to the one of the video
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0); // the video
+
+        Tesseract.recognize(canvas.toDataURL("image/png")).then(function(
+          result
+        ) {
+          console.log(result);
+
+          let content = result.text;
+          for (let i = 0; i < result.words.length; i++) {
+            if (result.words[i].confidence < 80) {
+              content = content.replace(result.words[i].text, "");
+              console.log(
+                "Deleted:",
+                result.words[i].text +
+                  " Confidence: " +
+                  result.words[i].confidence
+              );
+            }
+
+            if (i == result.words.length - 1) csv(content);
+          }
+        });
+      }
+
+      function csv(Results) {
+        Results = Results.split(" ").join(",");
+
+        CsvString = "data:application/csv," + encodeURIComponent(Results);
+        var x = document.createElement("A");
+        x.setAttribute("href", CsvString);
+        x.setAttribute("download", "somedata.csv");
+        document.body.appendChild(x);
+        x.click();
+      }
+    </script>
+  </body>
+  <script src="https://cdn.rawgit.com/naptha/tesseract.js/1.0.10/dist/tesseract.js"></script>
+</html>
